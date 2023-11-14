@@ -30,3 +30,43 @@ CAMAREIRA:
 - Após limpar o quarto, deve avisar o serviço do hotel que o quarto está disponível
 
 */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <time.h>
+#include <unistd.h>
+#include <semaphore.h>
+
+#define N_HOSPEDES 5
+
+void *hospedes (void *arg);
+void *camareira (void *arg);
+
+int main () {
+	int i;
+	int *id;
+
+	// Criacao das threads de Hospedes
+    pthread_t r[N_HOSPEDES];
+
+    for (i = 0; i < N_HOSPEDES; i++) {
+	    id = (int *) malloc(sizeof(int));
+	    *id = i;
+	    pthread_create(&r[i], NULL, hospedes, (void*) (id));
+	}
+
+    pthread_join(r[0],NULL);
+	return 0;
+}
+
+void * hospedes (void *arg) {
+	
+    int id_hospede = *((int *) arg);
+
+	while(1) {
+		// Hospede quer um quarto
+		printf("Hospede %d quer reservar um quarto...\n", id_hospede);
+		sleep(5);
+	} 
+}
