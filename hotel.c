@@ -74,7 +74,7 @@ int main () {
 
 
     // Inicializacao dos semaforos
-    sem_init(&semaforo_camareiras, 0, 0);
+    sem_init(&semaforo_camareiras, 0, N_CAMAREIRAS);
     sem_init(&semaforo_hospedes, 0, N_HOSPEDES);
     sem_init(&semaforo_servico_hotel, 0, 0);
     // sem_init(&semaforo_entregadores, 0, 0);
