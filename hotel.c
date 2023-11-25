@@ -50,11 +50,14 @@ void *servico_hotel (void *arg);
 
 // Variaveis de sincronizacao
 pthread_mutex_t mutex_quartos = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_camareira = PTHREAD_MUTEX_INITIALIZER;
 
 sem_t semaforo_hospedes;
 sem_t semaforo_servico_hotel;
 sem_t semaforo_camareiras;
 sem_t semaforo_entregadores;
+
+pthread_barrier_t barreira_hospedes;
 
 
 // Variaveis globais
@@ -143,10 +146,12 @@ void alocar_quarto(int id_hospede) {
     // Procura um quarto vazio
     for (num_quarto = 0; num_quarto < N_QUARTOS; num_quarto++) {
         if (quartos[num_quarto] == 0) {
-            quartos[num_quarto] = id_hospede;
-            hospede_quarto[id_hospede] = num_quarto;
-            quarto_alocado = 1;
-            break;
+            if (camareira_quarto[num_quarto] != -1) {
+                quartos[num_quarto] = id_hospede;
+                hospede_quarto[id_hospede] = num_quarto;
+                quarto_alocado = 1;
+                break;
+            }
         }
     }
 
@@ -179,6 +184,16 @@ int numAleatorio() {
 }
 
 
+int estaNoArray(int elemento, int array[], int tamanho) {
+    for (int i = 0; i < tamanho; ++i) {
+        if (array[i] == elemento) {
+            return 1; // Retorna 1 se o elemento estiver no array
+        }
+    }
+    return 0; // Retorna 0 se o elemento não estiver no array
+}
+
+
 void * hospedes (void *arg) {
 	
     int id_hospede = *((int *) arg);
@@ -189,52 +204,55 @@ void * hospedes (void *arg) {
         num_hospede_atual = id_hospede;
         sem_post(&semaforo_servico_hotel);
     pthread_mutex_unlock(&mutex_quartos);
-        sem_wait(&semaforo_hospedes);
+    
+    pthread_barrier_wait(&barreira_hospedes);
 
     sleep(5);
 
-    // Hospede libera o quarto e vai embora
-    int acao = numAleatorio();
-    if (acao >= 70) {
-        linhasVazias(2);
-        printf("Hospede %d quer ir embora...\n", id_hospede);
-        linhasVazias(2);
+    if (estaNoArray(id_hospede, hospede_quarto, N_HOSPEDES)) {
+        printf("Hospede %d conseguiu reservar um quarto!\n", id_hospede);
 
-        pthread_mutex_lock(&mutex_quartos);
-            int num_quarto = hospede_quarto[id_hospede];
-            quartos[num_quarto] = 0;
-            camareira_quarto[num_quarto] = num_quarto;
-            printf("Hospede %d liberou o quarto %d\n", id_hospede, id_hospede);
-            sem_post(&semaforo_camareiras);
-        pthread_mutex_unlock(&mutex_quartos);
-    } 
+        while (1) {
+            int acao = numAleatorio();
+            if (acao >= 70) {
+                linhasVazias(2);
+                printf("Hospede %d quer ir embora...\n", id_hospede);
+
+                pthread_mutex_lock(&mutex_quartos);
+                    int num_quarto = hospede_quarto[id_hospede];
+                    quartos[num_quarto] = 0;
+
+                    // Define o quarto que a camareira deve limpar
+                    camareira_quarto[num_quarto] = -1;
+
+                    sleep(2);
+
+                    printf("Hospede %d liberou o quarto %d\n", id_hospede, id_hospede);
+                    sem_post(&semaforo_camareiras);
+                pthread_mutex_unlock(&mutex_quartos);
+
+                break;
+            } else {
+                printf("Hospede %d quer realizar um pedido...\n", id_hospede);
+                sleep(3);
+                // linhasVazias(2);
+                // printf("Hospede %d quer realizar um pedido...\n", id_hospede);
+                // linhasVazias(2);
+
+                // pthread_mutex_lock(&mutex_quartos);
+                //     realizar_pedido(id_hospede, acao);
+                //     printf("Hospede %d realizou o pedido %d\n", id_hospede, acao);
+                // pthread_mutex_unlock(&mutex_quartos);  
+            }
+        }
+    } else {
+        printf("Hospede %d não conseguiu reservar um quarto!\n", id_hospede);
+    }
+    
 
     sleep(3);
     printf("Hospede %d foi embora...\n", id_hospede);
-    // else {
-    //     linhasVazias(2);
-    //     printf("Hospede %d quer realizar um pedido...\n", id_hospede);
-    //     linhasVazias(2);
-
-    //     pthread_mutex_lock(&mutex_quartos);
-    //         realizar_pedido(id_hospede, acao);
-    //         printf("Hospede %d realizou o pedido %d\n", id_hospede, acao);
-    //     pthread_mutex_unlock(&mutex_quartos);  
-    // }
-}
-
-
-void limpar_quarto() {
-    for (int i = 0; i < N_QUARTOS; i++) {
-        if (quartos[i] == 0) {
-            linhasVazias(2);
-            printf("Camareira está limpando o quarto %d...\n", i);
-            sleep(5);
-            printf("Camareira terminou de limpar o quarto %d...\n", i);
-            linhasVazias(2);
-        }
-        break;  
-    }
+    pthread_exit(0);
 }
 
 
@@ -243,13 +261,24 @@ void * camareiras (void *arg) {
     int id_camareira = *((int *) arg);
 
     while(1) {
-        sem_wait(&semaforo_camareiras);
-
+    
         linhasVazias(2);
         printf("Camareira %d está esperando um quarto para limpar...\n", id_camareira);
-        linhasVazias(2);
-    
-        limpar_quarto();
+
+        sem_wait(&semaforo_camareiras);
+
+        for (int i = 0; i < N_QUARTOS; i++) {
+            if (quartos[i] == 0) {
+                linhasVazias(2);
+                printf("Camareira %d está limpando o quarto %d...\n", id_camareira, i);
+                sleep(5);
+                printf("Camareira terminou de limpar o quarto %d...\n", i);
+                camareira_quarto[i] = 0;
+            }
+            break;  
+        }
+
+        
     } 
 }
 
@@ -271,7 +300,6 @@ void * servico_hotel (void *arg) {
         linhasVazias(2);
             printf("Servico do Hotel está aguardando solicitações dos hospedes!\n");
             sem_wait(&semaforo_servico_hotel);
-        linhasVazias(2);
 
         // Servico do Hotel quer alocar um quarto
         linhasVazias(2);
