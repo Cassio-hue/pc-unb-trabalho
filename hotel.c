@@ -115,8 +115,8 @@ void * hospedes (void *arg) {
                         sleep(2);
                         break; // sai do loop
                     }
-            pthread_mutex_unlock(&mutex_quartos);
             }
+                pthread_mutex_unlock(&mutex_quartos);
         }
 
         int quer_sair = numAleatorio(100);
@@ -124,12 +124,12 @@ void * hospedes (void *arg) {
         
         // SAI DO QUARTO COM X% DE CHANCE
         if (hospede_quarto[id_hospede] != -1 && quer_sair >= 80) {
-            printf("HOSPEDE %d: quer sair do quarto %d\n", id_hospede, hospede_quarto[id_hospede]);
+            printf("HOSPEDE %d: no quarto %d está solicitando check-out.\n", id_hospede, hospede_quarto[id_hospede]);
             sleep(2);
 
             pthread_mutex_lock(&mutex_quartos);
                 quartos[hospede_quarto[id_hospede]] = -2;
-                printf("HOSPEDE %d: saiu do quarto %d\n", id_hospede, hospede_quarto[id_hospede]);
+                printf("HOSPEDE %d: liberou o quarto %d\n", id_hospede, hospede_quarto[id_hospede]);
                 hospede_quarto[id_hospede] = -1;
                 sem_post(&semaforo_camareiras);
             pthread_mutex_unlock(&mutex_quartos);
@@ -226,6 +226,7 @@ void * entregadores (void *arg) {
     while (1) {
         pthread_mutex_lock(&mutex_entregador);
             while (totalPedidos == 0) {
+                printf("ENTREGADOR %d: está esperando um pedido...\n", id_entregador);
                 pthread_cond_wait(&cond_entregador, &mutex_entregador);
             }
 
