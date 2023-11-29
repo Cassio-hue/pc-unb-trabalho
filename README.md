@@ -1,5 +1,5 @@
 # Descrição Geral
-O projeto trata de um sistema de gestão de quartos de hotel, onde hóspedes podem selecionar quartos, fazer pedidos como água, alimentos variados e solicitar check-out. O Serviço do Hotel é responsável por alocar hóspedes, atender aos pedidos e coordenar a liberação dos quartos. A camareira entra em ação quando um quarto é liberado, realizando a limpeza e notificando o Serviço do Hotel sobre a disponibilidade do quarto. O objetivo é facilitar a gestão de ocupação, pedidos e limpeza dos quartos, oferecendo uma experiência eficiente aos hóspedes.
+O projeto trata de um sistema de gestão de quartos de hotel, onde hóspedes podem selecionar quartos, dormir no quarto, fazer pedidos como água, alimentos, toalhas e solicitar check-out. O Entregador é responsável por atender aos pedidos dos hospedes em seus respectivos quartos. A camareira entra em ação quando um quarto é liberado, realizando a limpeza antes da alocação de um novo hospede no quarto.
 
 # Compilar o programa
 
