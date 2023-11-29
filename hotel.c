@@ -8,7 +8,7 @@
 #define N_QUARTOS 5
 #define N_HOSPEDES 10
 #define N_CAMAREIRAS 2
-#define N_ENTREGADORES 1
+#define N_ENTREGADORES 2
 
 void *hospedes (void *arg);
 void *camareiras (void *arg);
@@ -104,34 +104,39 @@ void * hospedes (void *arg) {
     int id_hospede = *((int *) arg);
 
     while (1) {
-        pthread_mutex_lock(&mutex_quartos);
-        
-            for (int numero_quarto = 0; numero_quarto < N_QUARTOS; numero_quarto++) {
-                if (quartos[numero_quarto] == -1) {
-                    quartos[numero_quarto] = id_hospede;
-                    hospede_quarto[id_hospede] = numero_quarto;
-                    printf("HOSPEDE %d: pegou o quarto %d\n", id_hospede, numero_quarto);
-                    sleep(2);
+            if (hospede_quarto[id_hospede] == -1) {
+                pthread_mutex_lock(&mutex_quartos);
+                for (int numero_quarto = 0; numero_quarto < N_QUARTOS; numero_quarto++) {
+                    if (quartos[numero_quarto] == -1) {
+                        quartos[numero_quarto] = id_hospede;
+                        hospede_quarto[id_hospede] = numero_quarto;
+                pthread_mutex_unlock(&mutex_quartos);
+                        printf("HOSPEDE %d: pegou o quarto %d\n", id_hospede, numero_quarto);
+                        sleep(2);
+                        break; // sai do loop
+                    }
             pthread_mutex_unlock(&mutex_quartos);
-                    break; // sai do loop
-                }
-        pthread_mutex_unlock(&mutex_quartos);
+            }
         }
 
         int quer_sair = numAleatorio(100);
         int pedido = 0;
         
-        if (hospede_quarto[id_hospede] != -1 && quer_sair >= 70) {
+        // SAI DO QUARTO COM X% DE CHANCE
+        if (hospede_quarto[id_hospede] != -1 && quer_sair >= 80) {
             printf("HOSPEDE %d: quer sair do quarto %d\n", id_hospede, hospede_quarto[id_hospede]);
-            pthread_mutex_lock(&mutex_quartos);
+            sleep(2);
 
+            pthread_mutex_lock(&mutex_quartos);
                 quartos[hospede_quarto[id_hospede]] = -2;
                 printf("HOSPEDE %d: saiu do quarto %d\n", id_hospede, hospede_quarto[id_hospede]);
                 hospede_quarto[id_hospede] = -1;
                 sem_post(&semaforo_camareiras);
             pthread_mutex_unlock(&mutex_quartos);
-        } 
-        else if (hospede_quarto[id_hospede] != -1 && quer_sair < 70) {
+        }
+
+        // REALIZA UM PEDIDO COM X% DE
+        else if (hospede_quarto[id_hospede] != -1 && (quer_sair >=60 && quer_sair < 80)) {
 
             pedido = numAleatorio(3);
             int num_quarto = hospede_quarto[id_hospede];
@@ -143,7 +148,7 @@ void * hospedes (void *arg) {
                 pthread_mutex_lock(&mutex_pedido);
                     totalPedidos++;
                     hospede_pedido[id_hospede] = 0;
-                pthread_mutex_lock(&mutex_pedido);
+                pthread_mutex_unlock(&mutex_pedido);
                 pthread_cond_signal(&cond_entregador);
 
                 sem_wait(&semaforo_hospedes);
@@ -159,7 +164,7 @@ void * hospedes (void *arg) {
                 pthread_mutex_lock(&mutex_pedido);
                     totalPedidos++;
                     hospede_pedido[id_hospede] = 1;
-                pthread_mutex_lock(&mutex_pedido);
+                pthread_mutex_unlock(&mutex_pedido);
                 pthread_cond_signal(&cond_entregador);
 
                 sem_wait(&semaforo_hospedes);
@@ -174,14 +179,16 @@ void * hospedes (void *arg) {
                 pthread_mutex_lock(&mutex_pedido);
                     totalPedidos++;
                     hospede_pedido[id_hospede] = 2;
-                pthread_mutex_lock(&mutex_pedido);
+                pthread_mutex_unlock(&mutex_pedido);
                 pthread_cond_signal(&cond_entregador);
 
                 sem_wait(&semaforo_hospedes);
 
             }
+        } else if (hospede_quarto[id_hospede] != -1) {
+            printf("HOSPEDE %d: está dormindo....\n", id_hospede);
+            sleep(3);
         } else {
-
             sleep(1);
         }
 
