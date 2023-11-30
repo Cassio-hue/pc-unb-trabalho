@@ -19,7 +19,9 @@ void *entregadores (void *arg);
 pthread_mutex_t mutex_quartos = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_entregador = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_pedido = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_cond_t cond_entregador = PTHREAD_COND_INITIALIZER;
+
 sem_t semaforo_camareiras;
 sem_t semaforo_hospedes;
 
@@ -122,8 +124,8 @@ void * hospedes (void *arg) {
         int quer_sair = numAleatorio(100);
         int pedido = 0;
         
-        // SAI DO QUARTO COM X% DE CHANCE
-        if (hospede_quarto[id_hospede] != -1 && quer_sair >= 80) {
+        // SAI DO QUARTO COM 20% DE CHANCE
+        if (hospede_quarto[id_hospede] != -1 && quer_sair >= 70) {
             printf("HOSPEDE %d: no quarto %d está solicitando check-out.\n", id_hospede, hospede_quarto[id_hospede]);
             sleep(2);
 
@@ -135,8 +137,8 @@ void * hospedes (void *arg) {
             pthread_mutex_unlock(&mutex_quartos);
         }
 
-        // REALIZA UM PEDIDO COM X% DE
-        else if (hospede_quarto[id_hospede] != -1 && (quer_sair >=60 && quer_sair < 80)) {
+        // REALIZA UM PEDIDO COM 20% DE
+        else if (hospede_quarto[id_hospede] != -1 && (quer_sair >=60 && quer_sair < 70)) {
 
             pedido = numAleatorio(3);
             int num_quarto = hospede_quarto[id_hospede];
